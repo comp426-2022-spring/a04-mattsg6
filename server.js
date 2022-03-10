@@ -1,7 +1,13 @@
+const express = require('express')
+const app = express()
+app.use(express.json());
+const morgan = require('morgan');
+const fs = require('fs')
+
+const db = require('./database.js')
+
 const args = require('minimist')(process.argv.slice(2))
 args['port', 'debug', 'log', 'help']
-
-
 
 const port = args.port || process.env.PORT || 5555
 
@@ -26,26 +32,22 @@ if(help){
   process.exit(0)
 }
 
-const express = require('express')
-const app = express()
-
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-
-const db = require('./database.js')
+if(log) {
+  // Use morgan for logging to files
+  // Create a write stream to append to an access.log file
+  const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
+  // Set up the access logging middleware
+  app.use(morgan('combined', { stream: accessLog }))
+}
 
 const server = app.listen(port, () => {
     console.log('App listening on port %PORT%'.replace('%PORT%', port))
 })
 
-// For logging
-if(log){
-  var logger = require('morgan');
-
-  app.use(logger('common', {
-      stream: fs.createWriteStream('./access.log', {flags: 'a'})
-  }));
-}
+app.get('/app', (req, res) => {
+  res.status(200)
+  res.json({"message": "API works (200)"})
+});
 
 app.use((req, res, next) => {
   let logdata = {
@@ -61,29 +63,13 @@ app.use((req, res, next) => {
     referer: req.headers['referer'],
     useragent: req.headers['user-agent']
   }
-  const stmt = db.prepare(`INSERT INTO accesslog 
-  ( remoteaddr, 
-    remoteuser,
-    time,
-    method,
-    url,
-    protocol,
-    httpversion,
-    secure,
-    status,
-    referer,
-    useragent )
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
-    const info = stmt.run(logdata.remoteaddr, logdata.remoteuser, logdata.time, logdata.method,
-      logdata.url, logdata.protocol, logdata.httpversion, logdata.secure, logdata.status, 
-      logdata.referer, logdata.useragent)
-    res.status(200)
+  const stmt = db.prepare(`INSERT INTO accesslog (remoteaddr, remoteuser, time, method, url, 
+    protocol, httpversion, secure, status, referer, useragent) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+  const info = stmt.run(String(logdata.remoteaddr), String(logdata.remoteuser), String(logdata.time), 
+    String(logdata.method), String(logdata.url), String(logdata.protocol), String(logdata.httpversion), 
+    String(logdata.secure), String(logdata.status), String(logdata.referer), String(logdata.useragent))
+    next()
 })
-
-app.get('/app', (req, res) => {
-  res.status(200)
-  res.json({"message": "API workds (200)"})
-});
 
 if(debug){
   app.get('/app/log/access', (req, res) => {
@@ -91,62 +77,14 @@ if(debug){
         const stmt = db.prepare('SELECT * FROM accesslog').all()
         res.status(200).json(stmt)
       } catch (e) {
-            console.error(e)
+        console.error(e)
     }
   })
-  app.get('/app/error', (err, req, res, next) =>{
-    if (res.headersSent) {
-      return next(err)
-    }
+  app.get('/app/error', (req, res) =>{
     res.status(500)
-    res.render('error', { error: err })
+    res.end('Error test successful.')
   })
 }
-
-
-
-// app.post('/app/new/user', (req, res, next) => {
-//     let data = {
-//       user: req.body.username,
-//       pass: req.body.password
-//     }
-//     const stmt = db.prepare('INSERT INTO userinfo (username, password) VALUES (?,?)')
-//     const info = stmt.run(data.user, data.pass)
-//     res.status(200).json(info)
-// })
-
-// app.get('/app/users', (req, res) => {
-//     try{
-//         const stmt = db.prepare('SELECT * FROM userinfo').all()
-//         res.status(200).json(stmt)
-//     } catch (e) {
-//         console.error(e)
-// }})
-
-// app.get('/app/users/:id', (req, res) => {
-//     try{
-//         const stmt = db.prepare(`SELECT * FROM userinfo WHERE id = ?`).get(req.params.id)
-//         res.status(200).json(stmt)
-//     } catch (e) {
-//         console.error(e)
-//     }
-// })
-
-// app.patch('/app/update/user/:id', (req, res) => {
-//   let data = {
-//     user: req.body.username,
-//     pass: req.body.password
-//   }
-//   const stmt = db.prepare('UPDATE userinfo SET username = COALESCE(?,username), password = COALESCE(?,password) WHERE id = ?')
-//   const info = stmt.run(data.user, data.pass, req.params.id)
-//   res.status(200).json(info)
-// })
-
-// app.delete('/app/delete/user/:id', (req, res) => {
-//     const stmt = db.prepare('DELETE FROM userinfo WHERE id = ?')
-//     const info = stmt.run(req.params.id)
-//     res.status(200).json(info)
-// })
 
 app.use(function(req, res){
     res.status(404)

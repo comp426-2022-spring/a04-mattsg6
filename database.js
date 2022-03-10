@@ -13,13 +13,13 @@ if(row === undefined) {
         CREATE TABLE accesslog ( 
             remoteaddr TEXT,
             remoteuser TEXT,
-            time  INTEGER,
+            time TEXT,
             method TEXT,
             url TEXT,
             protocol TEXT,
             httpversion TEXT,
             secure TEXT,
-            status INTEGER,
+            status TEXT,
             referer TEXT,
             useragent TEXT);
         `;
