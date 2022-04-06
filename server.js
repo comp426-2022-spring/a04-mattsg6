@@ -153,7 +153,7 @@ if(debug){
     }
   })
   app.get('/app/error/', (req, res) =>{
-    res.status(500)
+    //res.status(500)
     res.end("500 INTERNAL SERVER ERROR")
   })
 }
