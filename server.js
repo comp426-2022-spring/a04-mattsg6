@@ -144,7 +144,7 @@ app.use((req, res, next) => {
 })
 
 if(debug){
-  app.get('/app/log/access', (req, res) => {
+  app.get('/app/log/access/', (req, res) => {
     try{
         const stmt = db.prepare('SELECT * FROM accesslog').all()
         res.status(200).json(stmt)
@@ -152,9 +152,9 @@ if(debug){
         console.error(e)
     }
   })
-  app.get('/app/error', (req, res) =>{
+  app.get('/app/error/', (req, res) =>{
     res.status(500)
-    res.end("Error test works.")
+    res.end("500 INTERNAL SERVER ERROR")
   })
 }
 
