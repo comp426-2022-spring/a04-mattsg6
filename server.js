@@ -87,7 +87,7 @@ const help = args.help
 const debug = args.debug
 const log = args.log
 
-if(help){
+if(help === true){
   console.log(`  
 --port	    Set the port number for the server to listen on. Must be an integer
           between 1 and 65535.
@@ -104,7 +104,7 @@ if(help){
   process.exit(0)
 }
 
-if(log) {
+if(log === true) {
   // Use morgan for logging to files
   // Create a write stream to append to an access.log file
   const accessLog = fs.createWriteStream('access.log', { flags: 'a' })
@@ -143,7 +143,7 @@ app.use((req, res, next) => {
     next()
 })
 
-if(debug){
+if(debug === true){
   app.get('/app/log/access/', (req, res) => {
     try{
         const stmt = db.prepare('SELECT * FROM accesslog').all()
