@@ -85,7 +85,7 @@ const port = args.port || process.env.PORT || 5555
 
 const help = args.help
 const debug = args.debug
-const log = true
+const log = args.log
 
 if(help === true){
   console.log(`  
